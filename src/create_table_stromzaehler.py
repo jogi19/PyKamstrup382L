@@ -23,7 +23,6 @@ def create_table(database, table):
 def create_weather_table(database, table):
   mydb.database = database
   sql = "CREATE TABLE "+ table+"( time DATETIME NOT NULL,\
-    datetime DATETIME,\
     timezone INT,\
     electric_meter_type CHAR(64),\
     serial_number INT,\
@@ -39,18 +38,18 @@ def create_weather_table(database, table):
 
 
 
-
+'''
 def alter_table(database, table):
   mydb.database = database
   mycursor.execute("ALTER TABLE customers ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY") 
-
+'''
 mydb = mysql.connector.connect(
   host="localhost",
   user="strom",
   password="power"
 )
 mycursor = mydb.cursor()
-#mycursor.execute("CREATE DATABASE energy_db")
+mycursor.execute("CREATE DATABASE energy_db")
 show_databases()
-create_weather_table("energy_db","weather_test5")
+create_weather_table("energy_db","stromzaehler")
 
