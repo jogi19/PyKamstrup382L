@@ -19,13 +19,12 @@ def create_connection(db_file):
         )
     return mysqldb
     
-def read_from_data(mysqldb,db_file,serialnumber,starttime=0):
+def read_from_data(mysqldb,db_file,serialnumber,starttime=0,start_value_positive_active_energie=0):
     '''
     read all data from a certain date
     '''
-    start_value_time="2020-12-11 21:50:30"
+    start_value_time=starttime
     #start_value_positive_active_energie=35936.0
-    start_value_positive_active_energie=0
     mysqldb.database = db_file
     dbcursor = mysqldb.cursor()
     sql = "SELECT * FROM stromzaehler WHERE( time>\'"+str(starttime)+"\' AND serial_number="+str(serialnumber)+")"
@@ -41,10 +40,38 @@ def read_from_data(mysqldb,db_file,serialnumber,starttime=0):
             average_power =calculate_average_power(start_value_positive_active_energie, row[4], start_value_time,str(row[0]))
             print("to be insert into database:")
             print("timer: "+str(row[0]))
+            print("timerzone: "+str(row[1]))
+            print("electric_meter_type: "+str(row[2]))
             print("serial_no: "+str(serialnumber))
-            print("average power: "+ str(average_power))
             print("value_positive_active: "+str(row[4]))
-            
+            print("average power: "+ str(average_power))
+            #muss wieder raus, wenn es auf der selben Database läuft
+            localsqldb = mysql.connector.connect(
+                host="localhost",
+                user="strom",
+                password="power"
+
+            )
+            localsqldb.database = "energy_db"
+            localcursor = localsqldb.cursor()
+            sql = "INSERT INTO average_power_in(\
+                    time,\
+                    timezone,\
+                    electric_meter_type,\
+                    serial_number,\
+                    positive_active_energie,\
+                    average_active_energie)\
+                    VALUES \
+                    ( \
+                    \'"+str(row[0])+"\',\
+                    "+str(row[1])+",\
+                    \'"+str(row[2])+"\',\
+                    "+str(serialnumber)+",\
+                    "+str(row[4])+",\
+                    "+str(average_power)+");"
+            print(sql)
+            localcursor.execute(sql)
+            localsqldb.commit()
             start_value_positive_active_energie=row[4]
             start_value_time=str(row[0])
 
@@ -66,6 +93,6 @@ def calculate_average_power(old_P, new_P, old_time,new_time):
 
 
 connection = create_connection("energy_db")
-read_from_data(connection,"energy_db",16721739,"2020-12-11 21:50:30")
+read_from_data(connection,"energy_db",16721739,"2020-12-11 21:50:30",35936.0)
 #read_from_data(connection,"energy_db",16721739,"0")
 read_from_data(connection,"energy_db",17717664,"2020-12-11 21:50:30")
