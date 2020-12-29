@@ -14,18 +14,18 @@ def create_connection(db_file):
     mysqldb = mysql.connector.connect(
           host="192.168.178.33",
           user="grafana",
-          password="grafana"
-          
+          password="grafana",
+          db=db_file
         )
     return mysqldb
     
-def read_from_data(mysqldb,db_file,serialnumber,starttime=0,start_value_positive_active_energie=0):
+def read_from_data(mysqldb,serialnumber,starttime=0,start_value_positive_active_energie=0):
     '''
     read all data from a certain date
     '''
     start_value_time=starttime
     #start_value_positive_active_energie=35936.0
-    mysqldb.database = db_file
+    #mysqldb.database = db_file
     dbcursor = mysqldb.cursor()
     sql = "SELECT * FROM stromzaehler WHERE( time>\'"+str(starttime)+"\' AND serial_number="+str(serialnumber)+")"
     #print(sql)
@@ -89,10 +89,60 @@ def calculate_average_power(old_P, new_P, old_time,new_time):
     print("average_power: "+ str(average_power))
     return average_power
 
+def get_start_values_energy(serialnumber):
+    positive_active_energie = 0
+    sql = "SELECT MAX(positive_active_energie) FROM average_power_in WHERE serial_number="+str(serialnumber)+";"
+    localsqldb = mysql.connector.connect(
+        host="localhost",
+        user="strom",
+        password="power"
 
+        )
+    localsqldb.database = "energy_db"
+    localcursor = localsqldb.cursor()
+    print(sql)
+    localcursor.execute(sql)
+    rows = localcursor.fetchall()
+    for row in rows:
+        positive_active_energie = row[0]
+    
+    print("positive_active_energie: "+ str(positive_active_energie))
+    return positive_active_energie
+
+def get_start_values_time(serialnumber):
+    time = ""
+    sql = "SELECT MAX(time) FROM average_power_in WHERE serial_number="+str(serialnumber)+";"
+    localsqldb = mysql.connector.connect(
+        host="localhost",
+        user="strom",
+        password="power"
+
+        )
+    localsqldb.database = "energy_db"
+    localcursor = localsqldb.cursor()
+    print(sql)
+    localcursor.execute(sql)
+    rows = localcursor.fetchall()
+    for row in rows:
+        time = row[0]
+    
+    print("time: "+ str(time))
+    return time
 
 
 connection = create_connection("energy_db")
-read_from_data(connection,"energy_db",16721739,"2020-12-11 21:50:30",35936.0)
-#read_from_data(connection,"energy_db",16721739,"0")
-read_from_data(connection,"energy_db",17717664,"2020-12-11 21:50:30")
+# first start ....
+#read_from_data(connection,16721739,"2020-12-11 21:50:30",35936.0)
+#read_from_data(connection,17717664,"2020-12-11 21:47:46",17807.0)
+
+# after initial start use
+start_values_time = get_start_values_time(16721739)
+start_values_energy = get_start_values_energy(16721739)
+read_from_data(connection,16721739,str(start_values_time),float(start_values_energy))
+
+start_values_time = get_start_values_time(17717664)
+start_values_energy = get_start_values_energy(17717664)
+read_from_data(connection,17717664,str(start_values_time),float(start_values_energy))
+
+
+
